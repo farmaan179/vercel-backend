@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
@@ -9,32 +11,36 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Logger middleware
 app.use((req, res, next) => {
   console.log("🔥 REQUEST:", req.method, req.url);
   next();
 });
 
+// Email transporter (ENV based)
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "farmaanmewati743@gmail.com",
-    pass: "oxqqanvqlyyqqnkw" // 
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
 
-// transporter check
-transporter.verify((error, success) => {
+// Check email connection
+transporter.verify((error) => {
   if (error) {
-    console.log("❌ TRANSPORT ERROR:", error);
+    console.log("❌ EMAIL SERVER ERROR:", error);
   } else {
     console.log("✅ Email server ready");
   }
 });
 
+// Home route
 app.get("/", (req, res) => {
   res.send("Backend running 🚀");
 });
 
+// Contact API
 app.post("/api/contact", async (req, res) => {
   const { name, email, message } = req.body;
 
@@ -49,9 +55,9 @@ app.post("/api/contact", async (req, res) => {
 
   try {
     const info = await transporter.sendMail({
-      from: "farmaanmewati743@gmail.com",
+      from: process.env.EMAIL_USER,
       replyTo: email,
-      to: "farmaanmewati743@gmail.com",
+      to: process.env.EMAIL_USER,
       subject: `Portfolio Contact from ${name}`,
       html: `
         <h2>New Message 🚀</h2>
@@ -63,7 +69,7 @@ app.post("/api/contact", async (req, res) => {
 
     console.log("✅ MAIL SENT:", info.response);
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       message: "Message sent successfully 🚀"
     });
@@ -71,13 +77,14 @@ app.post("/api/contact", async (req, res) => {
   } catch (error) {
     console.log("❌ EMAIL ERROR:", error);
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: "Email failed"
     });
   }
 });
 
+// Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
