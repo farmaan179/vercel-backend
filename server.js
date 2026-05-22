@@ -6,18 +6,35 @@ const nodemailer = require("nodemailer");
 
 const app = express();
 
+/* =========================
+   BASIC CONFIG
+========================= */
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors({
+  origin: "*"
+}));
+
 app.use(express.json());
 
-// Logger middleware
+/* =========================
+   LOGGER MIDDLEWARE
+========================= */
 app.use((req, res, next) => {
-  console.log("🔥 REQUEST:", req.method, req.url);
+  console.log("🔥", req.method, req.url);
   next();
 });
 
-// Email transporter (ENV based)
+/* =========================
+   HOME ROUTE
+========================= */
+app.get("/", (req, res) => {
+  res.send("Backend running 🚀");
+});
+
+/* =========================
+   EMAIL TRANSPORTER
+========================= */
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -26,25 +43,16 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Check email connection
-transporter.verify((error) => {
-  if (error) {
-    console.log("❌ EMAIL SERVER ERROR:", error);
-  } else {
-    console.log("✅ Email server ready");
-  }
-});
+/* ⚠️ SAFE INIT (NO CRASH ON RENDER) */
+console.log("📧 Email system initialized");
 
-// Home route
-app.get("/", (req, res) => {
-  res.send("Backend running 🚀");
-});
-
-// Contact API
+/* =========================
+   CONTACT API
+========================= */
 app.post("/api/contact", async (req, res) => {
   const { name, email, message } = req.body;
 
-  console.log("📩 DATA RECEIVED:", { name, email, message });
+  console.log("📩 DATA:", { name, email, message });
 
   if (!name || !email || !message) {
     return res.status(400).json({
@@ -69,7 +77,7 @@ app.post("/api/contact", async (req, res) => {
 
     console.log("✅ MAIL SENT:", info.response);
 
-    res.status(200).json({
+    res.json({
       success: true,
       message: "Message sent successfully 🚀"
     });
@@ -84,7 +92,9 @@ app.post("/api/contact", async (req, res) => {
   }
 });
 
-// Start server
+/* =========================
+   START SERVER
+========================= */
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
