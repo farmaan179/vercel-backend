@@ -8,50 +8,56 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 /* =========================
-   MIDDLEWARE
+   CORS MIDDLEWARE (FIXED)
 ========================= */
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || origin.startsWith("http://localhost")) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  })
+);
 
+/* =========================
+   BODY PARSER
+========================= */
 app.use(express.json());
 
+/* =========================
+   DEBUG LOG (optional)
+========================= */
 app.use((req, res, next) => {
-  console.log("🔥", req.method, req.url);
+  console.log("Incoming Origin:", req.headers.origin);
   next();
 });
 
 /* =========================
-   HEALTH CHECK
+   HEALTH CHECK ROUTE
 ========================= */
 app.get("/", (req, res) => {
-  res.send("Backend running 🚀");
+  res.json({ message: "Backend running 🚀" });
 });
 
 /* =========================
-   ENV CHECK
-========================= */
-console.log("🔐 EMAIL_USER:", process.env.EMAIL_USER);
-console.log("🔐 EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
-
-/* =========================
-   TRANSPORTER
+   NODEMAILER SETUP
 ========================= */
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   }
 });
 
-/* IMPORTANT: VERIFY SMTP */
-transporter.verify((err, success) => {
-  if (err) {
-    console.log("❌ SMTP NOT READY:", err);
+/* VERIFY EMAIL SERVER */
+transporter.verify((error) => {
+  if (error) {
+    console.log("❌ SMTP ERROR:", error.message);
   } else {
     console.log("✅ SMTP READY");
   }
@@ -61,42 +67,36 @@ transporter.verify((err, success) => {
    CONTACT API
 ========================= */
 app.post("/api/contact", async (req, res) => {
-  console.log("📩 CONTACT API HIT");
-
-  const { name, email, message } = req.body;
-
-  if (!name || !email || !message) {
-    return res.status(400).json({
-      success: false,
-      message: "All fields required"
-    });
-  }
-
   try {
-    console.log("📤 Sending email...");
+    const { name, email, message } = req.body;
 
-    const info = await transporter.sendMail({
-      from: `"Portfolio" <${process.env.EMAIL_USER}>`,
-      replyTo: email,
+    if (!name || !email || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required"
+      });
+    }
+
+    await transporter.sendMail({
+      from: `"Portfolio Contact" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
-      subject: `New Contact from ${name}`,
+      replyTo: email,
+      subject: `New Message from ${name}`,
       html: `
-        <h2>New Message 🚀</h2>
+        <h2>New Contact Message</h2>
         <p><b>Name:</b> ${name}</p>
         <p><b>Email:</b> ${email}</p>
-        <p><b>Message:</b><br>${message}</p>
+        <p><b>Message:</b> ${message}</p>
       `
     });
 
-    console.log("✅ EMAIL SENT:", info.response);
-
     return res.json({
       success: true,
-      message: "Message sent successfully 🚀"
+      message: "Email sent successfully 🚀"
     });
 
   } catch (error) {
-    console.log("❌ EMAIL ERROR:", error.message);
+    console.log("❌ ERROR:", error.message);
 
     return res.status(500).json({
       success: false,
@@ -110,5 +110,5 @@ app.post("/api/contact", async (req, res) => {
    START SERVER
 ========================= */
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
