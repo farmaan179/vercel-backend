@@ -11,7 +11,8 @@ const PORT = process.env.PORT || 5000;
    MIDDLEWARE
 ========================= */
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5173"
+  origin: true,
+  credentials: true
 }));
 
 app.use(express.json());
@@ -38,7 +39,9 @@ console.log("🔐 EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
    TRANSPORTER
 ========================= */
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
