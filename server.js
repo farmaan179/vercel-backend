@@ -7,25 +7,20 @@ const nodemailer = require("nodemailer");
 const app = express();
 
 /* =========================
-   CORS (TEMPORARY FIX - ALLOW ALL)
+   CORS (PRODUCTION READY)
 ========================= */
 app.use(cors({
   origin: [
     "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:3000",
     "https://my-resume-tau-seven.vercel.app"
   ],
-  methods: ["GET", "POST", "OPTIONS"],
+  methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"]
 }));
 
 app.use(express.json());
-/* =========================
-   LOG REQUESTS
-========================= */
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
 
 /* =========================
    HEALTH CHECK
@@ -33,7 +28,7 @@ app.use((req, res, next) => {
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "Backend is running 🚀",
+    message: "Backend is running 🚀"
   });
 });
 
@@ -44,18 +39,7 @@ const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-/* =========================
-   SMTP VERIFY
-========================= */
-transporter.verify((error) => {
-  if (error) {
-    console.log("❌ SMTP ERROR:", error.message);
-  } else {
-    console.log("✅ SMTP READY");
+    pass: process.env.EMAIL_PASS
   }
 });
 
@@ -69,12 +53,12 @@ app.post("/api/contact", async (req, res) => {
     if (!name || !email || !message) {
       return res.status(400).json({
         success: false,
-        message: "All fields are required",
+        message: "All fields are required"
       });
     }
 
     await transporter.sendMail({
-      from: `"Portfolio Contact" <${process.env.EMAIL_USER}>`,
+      from: `"Portfolio" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
       replyTo: email,
       subject: `New Message from ${name}`,
@@ -83,21 +67,21 @@ app.post("/api/contact", async (req, res) => {
         <p><b>Name:</b> ${name}</p>
         <p><b>Email:</b> ${email}</p>
         <p><b>Message:</b> ${message}</p>
-      `,
+      `
     });
 
-    res.status(200).json({
+    res.json({
       success: true,
-      message: "Email sent successfully 🚀",
+      message: "Email sent successfully 🚀"
     });
 
   } catch (error) {
-    console.log("❌ ERROR:", error.message);
+    console.log("ERROR:", error.message);
 
     res.status(500).json({
       success: false,
       message: "Email failed",
-      error: error.message,
+      error: error.message
     });
   }
 });
@@ -108,5 +92,5 @@ app.post("/api/contact", async (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
