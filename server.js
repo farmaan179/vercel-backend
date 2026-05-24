@@ -3,23 +3,30 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
+const validator = require("validator");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 /* =========================
-   CORS MIDDLEWARE (FIXED)
+   CORS MIDDLEWARE
 ========================= */
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || origin.startsWith("http://localhost")) {
+      const allowedOrigins = [
+        "http://localhost:3000",
+        "https://my-resume-tau-seven.vercel.app"
+      ];
+
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
       }
     },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true
   })
 );
 
@@ -29,7 +36,7 @@ app.use(
 app.use(express.json());
 
 /* =========================
-   DEBUG LOG (optional)
+   DEBUG LOG
 ========================= */
 app.use((req, res, next) => {
   console.log("Incoming Origin:", req.headers.origin);
@@ -40,7 +47,10 @@ app.use((req, res, next) => {
    HEALTH CHECK ROUTE
 ========================= */
 app.get("/", (req, res) => {
-  res.json({ message: "Backend running 🚀" });
+  res.json({
+    success: true,
+    message: "Backend running 🚀"
+  });
 });
 
 /* =========================
@@ -54,7 +64,9 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-/* VERIFY EMAIL SERVER */
+/* =========================
+   VERIFY SMTP
+========================= */
 transporter.verify((error) => {
   if (error) {
     console.log("❌ SMTP ERROR:", error.message);
@@ -70,27 +82,55 @@ app.post("/api/contact", async (req, res) => {
   try {
     const { name, email, message } = req.body;
 
-    if (!name || !email || !message) {
+    /* VALIDATION */
+    if (
+      !name?.trim() ||
+      !email?.trim() ||
+      !message?.trim()
+    ) {
       return res.status(400).json({
         success: false,
         message: "All fields are required"
       });
     }
 
+    /* EMAIL VALIDATION */
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email address"
+      });
+    }
+
+    /* SEND EMAIL */
     await transporter.sendMail({
       from: `"Portfolio Contact" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
       replyTo: email,
       subject: `New Message from ${name}`,
+
       html: `
         <h2>New Contact Message</h2>
-        <p><b>Name:</b> ${name}</p>
-        <p><b>Email:</b> ${email}</p>
-        <p><b>Message:</b> ${message}</p>
+
+        <p>
+          <strong>Name:</strong> ${validator.escape(name)}
+        </p>
+
+        <p>
+          <strong>Email:</strong> ${validator.escape(email)}
+        </p>
+
+        <p>
+          <strong>Message:</strong>
+        </p>
+
+        <p>
+          ${validator.escape(message).replace(/\n/g, "<br>")}
+        </p>
       `
     });
 
-    return res.json({
+    return res.status(200).json({
       success: true,
       message: "Email sent successfully 🚀"
     });
@@ -110,5 +150,5 @@ app.post("/api/contact", async (req, res) => {
    START SERVER
 ========================= */
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
