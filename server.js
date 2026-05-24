@@ -7,7 +7,7 @@ const nodemailer = require("nodemailer");
 const app = express();
 
 /* =========================
-   CORS (PRODUCTION READY)
+   CORS (PRODUCTION FIX)
 ========================= */
 app.use(cors({
   origin: [
@@ -16,7 +16,7 @@ app.use(cors({
     "http://localhost:3000",
     "https://my-resume-tau-seven.vercel.app"
   ],
-  methods: ["GET", "POST"],
+  methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type"]
 }));
 
@@ -70,7 +70,7 @@ app.post("/api/contact", async (req, res) => {
       `
     });
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: "Email sent successfully 🚀"
     });
@@ -87,10 +87,10 @@ app.post("/api/contact", async (req, res) => {
 });
 
 /* =========================
-   START SERVER
+   START SERVER (IMPORTANT FOR RENDER)
 ========================= */
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log("🚀 Server running on port", PORT);
 });
