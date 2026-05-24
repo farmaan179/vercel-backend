@@ -7,18 +7,15 @@ const nodemailer = require("nodemailer");
 const app = express();
 
 /* =========================
-   BASIC CONFIG
+   CONFIG
 ========================= */
 const PORT = process.env.PORT || 5000;
 
-app.use(cors({
-  origin: "*"
-}));
-
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 /* =========================
-   LOGGER MIDDLEWARE
+   LOGS
 ========================= */
 app.use((req, res, next) => {
   console.log("🔥", req.method, req.url);
@@ -26,35 +23,45 @@ app.use((req, res, next) => {
 });
 
 /* =========================
-   HOME ROUTE
+   HEALTH CHECK
 ========================= */
 app.get("/", (req, res) => {
   res.send("Backend running 🚀");
 });
 
 /* =========================
-   EMAIL TRANSPORTER
+   ENV CHECK (IMPORTANT)
+========================= */
+console.log("🔐 EMAIL_USER:", process.env.EMAIL_USER);
+console.log("🔐 EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
+
+/* =========================
+   TRANSPORTER
 ========================= */
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
-/* ⚠️ SAFE INIT (NO CRASH ON RENDER) */
 console.log("📧 Email system initialized");
 
 /* =========================
    CONTACT API
 ========================= */
 app.post("/api/contact", async (req, res) => {
-  const { name, email, message } = req.body;
+  console.log("📩 CONTACT API HIT");
 
-  console.log("📩 DATA:", { name, email, message });
+  const { name, email, message } = req.body;
+  console.log("📦 BODY:", req.body);
 
   if (!name || !email || !message) {
+    console.log("❌ Missing fields");
     return res.status(400).json({
       success: false,
       message: "All fields required"
@@ -62,6 +69,8 @@ app.post("/api/contact", async (req, res) => {
   }
 
   try {
+    console.log("📤 Sending email...");
+
     const info = await transporter.sendMail({
       from: process.env.EMAIL_USER,
       replyTo: email,
@@ -75,17 +84,19 @@ app.post("/api/contact", async (req, res) => {
       `
     });
 
-    console.log("✅ MAIL SENT:", info.response);
+    console.log("✅ EMAIL SENT SUCCESSFULLY");
+    console.log("📨 INFO:", info.response);
 
-    res.json({
+    return res.json({
       success: true,
       message: "Message sent successfully 🚀"
     });
 
   } catch (error) {
-    console.log("❌ EMAIL ERROR:", error);
+    console.log("❌ EMAIL ERROR:");
+    console.log(error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Email failed"
     });
