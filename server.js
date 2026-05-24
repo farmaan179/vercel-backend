@@ -3,69 +3,53 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
-const validator = require("validator");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 /* =========================
-   CORS MIDDLEWARE
+   CORS (TEMPORARY FIX - ALLOW ALL)
 ========================= */
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      const allowedOrigins = [
-        "http://localhost:3000",
-        "https://my-resume-tau-seven.vercel.app"
-      ];
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://my-resume-tau-seven.vercel.app"
+  ],
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"]
+}));
 
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true
-  })
-);
-
-/* =========================
-   BODY PARSER
-========================= */
 app.use(express.json());
-
 /* =========================
-   DEBUG LOG
+   LOG REQUESTS
 ========================= */
 app.use((req, res, next) => {
-  console.log("Incoming Origin:", req.headers.origin);
+  console.log(`${req.method} ${req.url}`);
   next();
 });
 
 /* =========================
-   HEALTH CHECK ROUTE
+   HEALTH CHECK
 ========================= */
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "Backend running 🚀"
+    message: "Backend is running 🚀",
   });
 });
 
 /* =========================
-   NODEMAILER SETUP
+   NODEMAILER
 ========================= */
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
 /* =========================
-   VERIFY SMTP
+   SMTP VERIFY
 ========================= */
 transporter.verify((error) => {
   if (error) {
@@ -82,66 +66,38 @@ app.post("/api/contact", async (req, res) => {
   try {
     const { name, email, message } = req.body;
 
-    /* VALIDATION */
-    if (
-      !name?.trim() ||
-      !email?.trim() ||
-      !message?.trim()
-    ) {
+    if (!name || !email || !message) {
       return res.status(400).json({
         success: false,
-        message: "All fields are required"
+        message: "All fields are required",
       });
     }
 
-    /* EMAIL VALIDATION */
-    if (!validator.isEmail(email)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid email address"
-      });
-    }
-
-    /* SEND EMAIL */
     await transporter.sendMail({
       from: `"Portfolio Contact" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
       replyTo: email,
       subject: `New Message from ${name}`,
-
       html: `
         <h2>New Contact Message</h2>
-
-        <p>
-          <strong>Name:</strong> ${validator.escape(name)}
-        </p>
-
-        <p>
-          <strong>Email:</strong> ${validator.escape(email)}
-        </p>
-
-        <p>
-          <strong>Message:</strong>
-        </p>
-
-        <p>
-          ${validator.escape(message).replace(/\n/g, "<br>")}
-        </p>
-      `
+        <p><b>Name:</b> ${name}</p>
+        <p><b>Email:</b> ${email}</p>
+        <p><b>Message:</b> ${message}</p>
+      `,
     });
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
-      message: "Email sent successfully 🚀"
+      message: "Email sent successfully 🚀",
     });
 
   } catch (error) {
     console.log("❌ ERROR:", error.message);
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: "Email failed",
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -149,6 +105,8 @@ app.post("/api/contact", async (req, res) => {
 /* =========================
    START SERVER
 ========================= */
+const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
