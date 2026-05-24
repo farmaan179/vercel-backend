@@ -5,20 +5,17 @@ const cors = require("cors");
 const nodemailer = require("nodemailer");
 
 const app = express();
-
-/* =========================
-   CONFIG
-========================= */
 const PORT = process.env.PORT || 5000;
 
+/* =========================
+   MIDDLEWARE
+========================= */
 app.use(cors({
   origin: process.env.CLIENT_URL || "http://localhost:5173"
 }));
+
 app.use(express.json());
 
-/* =========================
-   LOGS
-========================= */
 app.use((req, res, next) => {
   console.log("🔥", req.method, req.url);
   next();
@@ -32,7 +29,7 @@ app.get("/", (req, res) => {
 });
 
 /* =========================
-   ENV CHECK (IMPORTANT)
+   ENV CHECK
 ========================= */
 console.log("🔐 EMAIL_USER:", process.env.EMAIL_USER);
 console.log("🔐 EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
@@ -45,13 +42,17 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false
   }
 });
 
-console.log("📧 Email system initialized");
+/* IMPORTANT: VERIFY SMTP */
+transporter.verify((err, success) => {
+  if (err) {
+    console.log("❌ SMTP NOT READY:", err);
+  } else {
+    console.log("✅ SMTP READY");
+  }
+});
 
 /* =========================
    CONTACT API
@@ -60,10 +61,8 @@ app.post("/api/contact", async (req, res) => {
   console.log("📩 CONTACT API HIT");
 
   const { name, email, message } = req.body;
-  console.log("📦 BODY:", req.body);
 
   if (!name || !email || !message) {
-    console.log("❌ Missing fields");
     return res.status(400).json({
       success: false,
       message: "All fields required"
@@ -74,20 +73,19 @@ app.post("/api/contact", async (req, res) => {
     console.log("📤 Sending email...");
 
     const info = await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: `"Portfolio" <${process.env.EMAIL_USER}>`,
       replyTo: email,
       to: process.env.EMAIL_USER,
-      subject: `Portfolio Contact from ${name}`,
+      subject: `New Contact from ${name}`,
       html: `
         <h2>New Message 🚀</h2>
         <p><b>Name:</b> ${name}</p>
         <p><b>Email:</b> ${email}</p>
-        <p><b>Message:</b> ${message}</p>
+        <p><b>Message:</b><br>${message}</p>
       `
     });
 
-    console.log("✅ EMAIL SENT SUCCESSFULLY");
-    console.log("📨 INFO:", info.response);
+    console.log("✅ EMAIL SENT:", info.response);
 
     return res.json({
       success: true,
@@ -95,12 +93,12 @@ app.post("/api/contact", async (req, res) => {
     });
 
   } catch (error) {
-    console.log("❌ EMAIL ERROR:");
-    console.log(error);
+    console.log("❌ EMAIL ERROR:", error.message);
 
     return res.status(500).json({
       success: false,
-      message: "Email failed"
+      message: "Email failed",
+      error: error.message
     });
   }
 });
