@@ -10,7 +10,7 @@ const app = express();
    MIDDLEWARE
 ========================= */
 
-app.use(cors({ origin: "*" }));
+app.use(cors());
 app.use(express.json());
 
 /* =========================
@@ -25,25 +25,25 @@ app.get("/", (req, res) => {
 });
 
 /* =========================
-   NODEMAILER SETUP
+   NODEMAILER SAFE SETUP
 ========================= */
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+let transporter;
 
-/* OPTIONAL: verify SMTP connection */
-transporter.verify((error, success) => {
-  if (error) {
-    console.log("SMTP ERROR ❌", error);
-  } else {
-    console.log("SMTP READY ✅");
-  }
-});
+try {
+  transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  console.log("SMTP CONFIG LOADED ✅");
+
+} catch (err) {
+  console.log("SMTP SETUP ERROR ❌", err);
+}
 
 /* =========================
    CONTACT ROUTE
@@ -55,6 +55,13 @@ app.post("/api/contact", async (req, res) => {
 
     console.log("REQUEST BODY:", req.body);
 
+    if (!transporter) {
+      return res.status(500).json({
+        success: false,
+        message: "Email system not configured",
+      });
+    }
+
     const info = await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
@@ -63,8 +70,7 @@ app.post("/api/contact", async (req, res) => {
       text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
     });
 
-    console.log("EMAIL SENT SUCCESS ✅");
-    console.log("EMAIL INFO:", info.response);
+    console.log("EMAIL SENT ✅", info.response);
 
     return res.status(200).json({
       success: true,
