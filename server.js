@@ -7,7 +7,7 @@ const nodemailer = require("nodemailer");
 const app = express();
 
 /* =========================
-   MIDDLEWARE (FIXED CORS)
+   MIDDLEWARE
 ========================= */
 app.use(cors({
   origin: "https://my-resume-tau-seven.vercel.app",
@@ -16,6 +16,12 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+/* =========================
+   ENV DEBUG (NEW 🔥)
+========================= */
+console.log("📌 EMAIL_USER:", process.env.EMAIL_USER);
+console.log("📌 EMAIL_PASS EXISTS:", !!process.env.EMAIL_PASS);
 
 /* =========================
    HOME ROUTE
@@ -40,7 +46,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-/* SMTP CHECK */
+/* SMTP CHECK (IMPROVED 🔥) */
 transporter.verify((err, success) => {
   if (err) {
     console.log("❌ SMTP ERROR:", err);
@@ -54,6 +60,8 @@ transporter.verify((err, success) => {
 ========================= */
 app.get("/test-mail", async (req, res) => {
   try {
+    console.log("📩 TEST MAIL STARTING...");
+
     const info = await transporter.sendMail({
       from: `"Portfolio" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
@@ -69,41 +77,40 @@ app.get("/test-mail", async (req, res) => {
     });
 
   } catch (err) {
-    console.log("❌ TEST MAIL ERROR:", err);
+    console.log("❌ TEST MAIL ERROR FULL:", err);
 
     res.status(500).json({
       success: false,
-      message: "Test mail failed",
+      error: err.message
     });
   }
 });
 
 /* =========================
-   CONTACT ROUTE (FIXED + SAFE)
+   CONTACT ROUTE (DEBUG IMPROVED)
 ========================= */
 app.post("/api/contact", async (req, res) => {
   try {
+    console.log("📩 REQUEST BODY:", req.body);
+
     const { name, email, message } = req.body;
 
     if (!name || !email || !message) {
+      console.log("❌ MISSING FIELDS");
       return res.status(400).json({
         success: false,
         message: "All fields required",
       });
     }
 
-    console.log("📩 Incoming request:", req.body);
+    console.log("📩 SENDING EMAIL...");
 
     const info = await transporter.sendMail({
       from: `"Portfolio Contact" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
       replyTo: email,
       subject: `New Message from ${name}`,
-      text: `
-Name: ${name}
-Email: ${email}
-Message: ${message}
-      `,
+      text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
     });
 
     console.log("📩 EMAIL SENT SUCCESS:", info.response);
@@ -114,11 +121,11 @@ Message: ${message}
     });
 
   } catch (error) {
-    console.log("❌ EMAIL ERROR FULL:", error);
+    console.log("❌ EMAIL ERROR FULL STACK:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Email sending failed ❌",
+      error: error.message
     });
   }
 });
