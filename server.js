@@ -81,21 +81,22 @@ app.post("/api/contact", async (req, res) => {
   });
 
   transporter.sendMail(
-  {
-    from: `"Contact Form" <${process.env.EMAIL_USER}>`,
-    to: process.env.EMAIL_USER,
-    subject: "Test Email",
-    text: "Testing SMTP",
-  },
-  (error, info) => {
-    if (error) {
-      console.log("❌ EMAIL FAILED:", error);
-    } else {
-      console.log("📩 EMAIL SENT:", info.response);
+    {
+      from: `"Contact Form" <${process.env.EMAIL_USER}>`,
+      to: process.env.EMAIL_USER,
+      replyTo: email,
+      subject: `New Message from ${name}`,
+      text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
+    },
+    (error, info) => {
+      if (error) {
+        console.log("❌ EMAIL ERROR:", error);
+      } else {
+        console.log("📩 EMAIL SENT:", info.response);
+      }
     }
-  })
-}
-);;
+  );
+});
 
 /* =========================
    SERVER START
