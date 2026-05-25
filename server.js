@@ -6,17 +6,12 @@ const nodemailer = require("nodemailer");
 
 const app = express();
 
-/* =========================
-   MIDDLEWARE
-========================= */
-
 app.use(cors());
 app.use(express.json());
 
 /* =========================
    HOME ROUTE
 ========================= */
-
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -27,7 +22,6 @@ app.get("/", (req, res) => {
 /* =========================
    NODEMAILER SETUP
 ========================= */
-
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 465,
@@ -48,9 +42,29 @@ transporter.verify((err) => {
 });
 
 /* =========================
+   TEST MAIL ROUTE (SEPARATE)
+========================= */
+app.get("/test-mail", async (req, res) => {
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
+      subject: "Test Email",
+      text: "Hello bhai test mail working hai",
+    });
+
+    console.log("TEST EMAIL:", info.response);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.log("TEST MAIL ERROR:", err);
+    res.json({ success: false });
+  }
+});
+
+/* =========================
    CONTACT ROUTE
 ========================= */
-
 app.post("/api/contact", async (req, res) => {
   const { name, email, message } = req.body;
 
@@ -61,13 +75,11 @@ app.post("/api/contact", async (req, res) => {
     });
   }
 
-  // ✅ response fast (fix "sending stuck")
   res.status(200).json({
     success: true,
     message: "Message sent successfully ✅",
   });
 
-  // 📩 email send in background
   transporter.sendMail(
     {
       from: `"Contact Form" <${process.env.EMAIL_USER}>`,
@@ -80,16 +92,15 @@ app.post("/api/contact", async (req, res) => {
       if (error) {
         console.log("❌ EMAIL ERROR:", error);
       } else {
-        console.log("📩 EMAIL SENT SUCCESS:", info.response);
+        console.log("📩 EMAIL SENT:", info.response);
       }
-    },
+    }
   );
 });
 
 /* =========================
    SERVER START
 ========================= */
-
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
