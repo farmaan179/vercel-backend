@@ -36,18 +36,19 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-/* Optional check */
+/* SMTP CHECK */
 transporter.verify((err) => {
   if (err) {
-    console.log("SMTP ERROR ❌", err);
+    console.log("❌ SMTP ERROR:", err);
   } else {
-    console.log("SMTP READY ✅");
+    console.log("✅ SMTP READY");
   }
 });
 
 /* =========================
    CONTACT ROUTE
 ========================= */
+
 app.post("/api/contact", async (req, res) => {
   const { name, email, message } = req.body;
 
@@ -58,25 +59,31 @@ app.post("/api/contact", async (req, res) => {
     });
   }
 
-  // 🔥 FAST RESPONSE FIRST (fix "Sending...")
+  // ✅ response fast (fix "sending stuck")
   res.status(200).json({
     success: true,
     message: "Message sent successfully ✅",
   });
 
-  // 🔥 EMAIL BACKGROUND ME SEND HOGA
-  transporter.sendMail({
-    from: process.env.EMAIL_USER,
-    to: process.env.EMAIL_USER,
-    replyTo: email,
-    subject: `New Message from ${name}`,
-    text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
-  }).then(info => {
-    console.log("EMAIL SENT ✅", info.response);
-  }).catch(err => {
-    console.log("EMAIL ERROR ❌", err);
-  });
+  // 📩 email send in background
+  transporter.sendMail(
+    {
+      from: `"Contact Form" <${process.env.EMAIL_USER}>`,
+      to: process.env.EMAIL_USER,
+      replyTo: email,
+      subject: `New Message from ${name}`,
+      text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
+    },
+    (error, info) => {
+      if (error) {
+        console.log("❌ EMAIL ERROR:", error);
+      } else {
+        console.log("📩 EMAIL SENT SUCCESS:", info.response);
+      }
+    }
+  );
 });
+
 /* =========================
    SERVER START
 ========================= */
