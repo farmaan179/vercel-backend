@@ -6,19 +6,30 @@ const nodemailer = require("nodemailer");
 
 const app = express();
 
-/* ✅ FIX CORS */
+/* =========================
+   PORT (ENV CONTROLLED)
+========================= */
+const PORT = process.env.PORT || 5000;
+
+/* =========================
+   MIDDLEWARE
+========================= */
 app.use(cors({
   origin: "*"
 }));
 
 app.use(express.json());
 
-/* HOME */
+/* =========================
+   HOME ROUTE
+========================= */
 app.get("/", (req, res) => {
   res.send("Backend Working ✅");
 });
 
-/* EMAIL SETUP */
+/* =========================
+   EMAIL SETUP (GMAIL SMTP)
+========================= */
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -27,50 +38,74 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-/* TEST */
+/* =========================
+   TEST MAIL ROUTE
+========================= */
 app.get("/test-mail", async (req, res) => {
   try {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
-      subject: "Test",
-      text: "Working",
+      subject: "Test Mail",
+      text: "Backend working fine 👍",
     });
 
     res.send("Mail Sent ✅");
 
   } catch (err) {
-    console.log(err);
-    res.send("Mail Failed ❌");
+    console.log("TEST MAIL ERROR:", err);
+    res.status(500).send("Mail Failed ❌");
   }
 });
 
-/* CONTACT */
+/* =========================
+   CONTACT API ROUTE
+========================= */
 app.post("/api/contact", async (req, res) => {
   try {
     const { name, email, message } = req.body;
 
+    console.log("REQUEST RECEIVED:", req.body);
+
     if (!name || !email || !message) {
-      return res.send({ success: false, message: "Missing fields" });
+      return res.status(400).send({
+        success: false,
+        message: "All fields required",
+      });
     }
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
       replyTo: email,
-      subject: "New Message",
-      text: `${name} ${email} ${message}`,
+      subject: `New Message from ${name}`,
+      text: `
+Name: ${name}
+Email: ${email}
+Message: ${message}
+      `,
     });
 
-    res.send({ success: true });
+    console.log("EMAIL SENT SUCCESSFULLY");
+
+    res.send({
+      success: true,
+      message: "Message sent successfully ✅",
+    });
 
   } catch (err) {
-    console.log(err);
-    res.send({ success: false });
+    console.log("EMAIL ERROR:", err);
+
+    res.status(500).send({
+      success: false,
+      message: "Email sending failed ❌",
+    });
   }
 });
 
-/* SERVER START */
-app.listen(5000, () => {
-  console.log("Server Running");
+/* =========================
+   START SERVER
+========================= */
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
