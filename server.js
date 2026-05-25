@@ -2,7 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
 const app = express();
 
@@ -14,6 +14,12 @@ app.use(cors());
 app.use(express.json());
 
 /* =========================
+   RESEND SETUP
+========================= */
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+/* =========================
    HOME ROUTE
 ========================= */
 
@@ -22,18 +28,6 @@ app.get("/", (req, res) => {
     success: true,
     message: "Backend Working ✅",
   });
-});
-
-/* =========================
-   NODEMAILER
-========================= */
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
 });
 
 /* =========================
@@ -51,19 +45,18 @@ app.post("/api/contact", async (req, res) => {
       });
     }
 
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+    const data = await resend.emails.send({
+      from: "Contact Form <onboarding@resend.dev>",
       to: process.env.EMAIL_USER,
-      replyTo: email,
       subject: `New Message from ${name}`,
       text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
     });
 
-    console.log("EMAIL SENT ✅", info.response);
+    console.log("EMAIL SENT ✅", data);
 
     return res.status(200).json({
       success: true,
-      message: "Email Sent ✅",
+      message: "Email Sent Successfully ✅",
     });
 
   } catch (error) {
