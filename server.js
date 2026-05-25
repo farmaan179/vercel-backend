@@ -31,7 +31,10 @@ const transporter = nodemailer.createTransport({
   secure: true,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // Gmail App Password
+    pass: process.env.EMAIL_PASS, // Gmail App Password ONLY
+  },
+  tls: {
+    rejectUnauthorized: false,
   },
 });
 
@@ -52,7 +55,7 @@ transporter.verify((err) => {
 app.get("/test-mail", async (req, res) => {
   try {
     const info = await transporter.sendMail({
-      from: `"Test" <${process.env.EMAIL_USER}>`,
+      from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
       subject: "Test Email",
       text: "Hello bhai, SMTP working hai 🚀",
@@ -60,7 +63,10 @@ app.get("/test-mail", async (req, res) => {
 
     console.log("📩 TEST EMAIL SENT:", info.response);
 
-    res.json({ success: true, message: "Test mail sent" });
+    res.json({
+      success: true,
+      message: "Test mail sent",
+    });
   } catch (err) {
     console.log("❌ TEST MAIL ERROR:", err);
 
@@ -86,22 +92,20 @@ app.post("/api/contact", async (req, res) => {
       });
     }
 
-    // send email
-    await transporter.sendMail({
-      from: `"Contact Form" <${process.env.EMAIL_USER}>`,
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
       subject: `New Message from ${name}`,
-      text: `
-Name: ${name}
-Email: ${email}
-Message: ${message}
-      `,
+      text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
     });
+
+    console.log("📩 EMAIL SENT:", info.response);
 
     return res.status(200).json({
       success: true,
       message: "Message sent successfully ✅",
     });
+
   } catch (error) {
     console.log("❌ EMAIL ERROR:", error);
 
