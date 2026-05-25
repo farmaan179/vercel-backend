@@ -48,19 +48,19 @@ transporter.verify((err) => {
 /* =========================
    CONTACT ROUTE
 ========================= */
-
 app.post("/api/contact", async (req, res) => {
+  const { name, email, message } = req.body;
+
+  if (!name || !email || !message) {
+    return res.status(400).json({
+      success: false,
+      message: "All fields required",
+    });
+  }
+
   try {
-    const { name, email, message } = req.body;
-
-    if (!name || !email || !message) {
-      return res.status(400).json({
-        success: false,
-        message: "All fields required",
-      });
-    }
-
-    const info = await transporter.sendMail({
+    // IMPORTANT: mail send but don't block response
+    transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
       replyTo: email,
@@ -68,11 +68,10 @@ app.post("/api/contact", async (req, res) => {
       text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
     });
 
-    console.log("EMAIL SENT ✅", info.response);
-
+    // 🔥 FAST RESPONSE (fix "sending stuck")
     return res.status(200).json({
       success: true,
-      message: "Email Sent Successfully ✅",
+      message: "Message sent successfully ✅",
     });
 
   } catch (error) {
@@ -84,7 +83,6 @@ app.post("/api/contact", async (req, res) => {
     });
   }
 });
-
 /* =========================
    SERVER START
 ========================= */
