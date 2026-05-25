@@ -6,7 +6,15 @@ const nodemailer = require("nodemailer");
 
 const app = express();
 
-app.use(cors());
+/* =========================
+   MIDDLEWARE (FIXED CORS)
+========================= */
+app.use(cors({
+  origin: "https://my-resume-tau-seven.vercel.app",
+  methods: ["GET", "POST"],
+  credentials: true
+}));
+
 app.use(express.json());
 
 /* =========================
@@ -33,7 +41,7 @@ const transporter = nodemailer.createTransport({
 });
 
 /* SMTP CHECK */
-transporter.verify((err) => {
+transporter.verify((err, success) => {
   if (err) {
     console.log("❌ SMTP ERROR:", err);
   } else {
@@ -47,7 +55,7 @@ transporter.verify((err) => {
 app.get("/test-mail", async (req, res) => {
   try {
     const info = await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: `"Portfolio" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
       subject: "Test Email",
       text: "Hello bhai test mail working hai",
@@ -71,7 +79,7 @@ app.get("/test-mail", async (req, res) => {
 });
 
 /* =========================
-   CONTACT ROUTE (FIXED)
+   CONTACT ROUTE (FIXED + SAFE)
 ========================= */
 app.post("/api/contact", async (req, res) => {
   try {
@@ -84,17 +92,21 @@ app.post("/api/contact", async (req, res) => {
       });
     }
 
-    console.log("📩 Sending email...");
+    console.log("📩 Incoming request:", req.body);
 
     const info = await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: `"Portfolio Contact" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
       replyTo: email,
       subject: `New Message from ${name}`,
-      text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
+      text: `
+Name: ${name}
+Email: ${email}
+Message: ${message}
+      `,
     });
 
-    console.log("📩 EMAIL SENT:", info.response);
+    console.log("📩 EMAIL SENT SUCCESS:", info.response);
 
     return res.status(200).json({
       success: true,
@@ -102,7 +114,7 @@ app.post("/api/contact", async (req, res) => {
     });
 
   } catch (error) {
-    console.log("❌ EMAIL FAILED:", error);
+    console.log("❌ EMAIL ERROR FULL:", error);
 
     return res.status(500).json({
       success: false,
@@ -110,6 +122,7 @@ app.post("/api/contact", async (req, res) => {
     });
   }
 });
+
 /* =========================
    SERVER START
 ========================= */
