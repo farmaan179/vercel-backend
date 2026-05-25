@@ -58,30 +58,24 @@ app.post("/api/contact", async (req, res) => {
     });
   }
 
-  try {
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER,
-      replyTo: email,
-      subject: `New Message from ${name}`,
-      text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
-    });
+  // 🔥 FAST RESPONSE FIRST (fix "Sending...")
+  res.status(200).json({
+    success: true,
+    message: "Message sent successfully ✅",
+  });
 
+  // 🔥 EMAIL BACKGROUND ME SEND HOGA
+  transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: process.env.EMAIL_USER,
+    replyTo: email,
+    subject: `New Message from ${name}`,
+    text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
+  }).then(info => {
     console.log("EMAIL SENT ✅", info.response);
-
-    return res.status(200).json({
-      success: true,
-      message: "Message sent successfully ✅",
-    });
-
-  } catch (error) {
-    console.log("EMAIL ERROR ❌", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Email Failed ❌",
-    });
-  }
+  }).catch(err => {
+    console.log("EMAIL ERROR ❌", err);
+  });
 });
 /* =========================
    SERVER START
