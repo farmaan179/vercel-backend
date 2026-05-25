@@ -9,19 +9,8 @@ const app = express();
 /* =========================
    MIDDLEWARE
 ========================= */
-app.use(cors({
-  origin: "https://my-resume-tau-seven.vercel.app",
-  methods: ["GET", "POST"],
-  credentials: true
-}));
-
+app.use(cors()); // simple & safe
 app.use(express.json());
-
-/* =========================
-   ENV DEBUG (NEW 🔥)
-========================= */
-console.log("📌 EMAIL_USER:", process.env.EMAIL_USER);
-console.log("📌 EMAIL_PASS EXISTS:", !!process.env.EMAIL_PASS);
 
 /* =========================
    HOME ROUTE
@@ -46,8 +35,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-/* SMTP CHECK (IMPROVED 🔥) */
-transporter.verify((err, success) => {
+/* SMTP CHECK */
+transporter.verify((err) => {
   if (err) {
     console.log("❌ SMTP ERROR:", err);
   } else {
@@ -56,20 +45,18 @@ transporter.verify((err, success) => {
 });
 
 /* =========================
-   TEST MAIL ROUTE
+   TEST MAIL (DEBUG)
 ========================= */
 app.get("/test-mail", async (req, res) => {
   try {
-    console.log("📩 TEST MAIL STARTING...");
-
     const info = await transporter.sendMail({
-      from: `"Portfolio" <${process.env.EMAIL_USER}>`,
+      from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
       subject: "Test Email",
-      text: "Hello bhai test mail working hai",
+      text: "Test mail working hai 👍",
     });
 
-    console.log("📩 TEST EMAIL SENT:", info.response);
+    console.log("📩 TEST MAIL SENT:", info.response);
 
     res.json({
       success: true,
@@ -77,55 +64,52 @@ app.get("/test-mail", async (req, res) => {
     });
 
   } catch (err) {
-    console.log("❌ TEST MAIL ERROR FULL:", err);
+    console.log("❌ TEST MAIL ERROR:", err);
 
     res.status(500).json({
       success: false,
-      error: err.message
+      message: "Test mail failed",
     });
   }
 });
 
 /* =========================
-   CONTACT ROUTE (DEBUG IMPROVED)
+   CONTACT API
 ========================= */
 app.post("/api/contact", async (req, res) => {
   try {
-    console.log("📩 REQUEST BODY:", req.body);
-
     const { name, email, message } = req.body;
 
     if (!name || !email || !message) {
-      console.log("❌ MISSING FIELDS");
       return res.status(400).json({
         success: false,
         message: "All fields required",
       });
     }
 
-    console.log("📩 SENDING EMAIL...");
+    console.log("📩 REQUEST RECEIVED:", req.body);
 
     const info = await transporter.sendMail({
-      from: `"Portfolio Contact" <${process.env.EMAIL_USER}>`,
+      from: `"Portfolio" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
       replyTo: email,
       subject: `New Message from ${name}`,
       text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
     });
 
-    console.log("📩 EMAIL SENT SUCCESS:", info.response);
+    console.log("📩 EMAIL SENT:", info.response);
 
-    return res.status(200).json({
+    return res.json({
       success: true,
       message: "Message sent successfully ✅",
     });
 
   } catch (error) {
-    console.log("❌ EMAIL ERROR FULL STACK:", error);
+    console.log("❌ EMAIL ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      error: error.message
+      message: "Email sending failed ❌",
     });
   }
 });
