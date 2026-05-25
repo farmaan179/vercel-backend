@@ -84,7 +84,7 @@ app.post("/api/contact", async (req, res) => {
       });
     }
 
-    console.log("📩 Incoming request:", { name, email });
+    console.log("📩 Sending email...");
 
     const info = await transporter.sendMail({
       from: process.env.EMAIL_USER,
@@ -94,7 +94,7 @@ app.post("/api/contact", async (req, res) => {
       text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
     });
 
-    console.log("📩 EMAIL SENT SUCCESS:", info.response);
+    console.log("📩 EMAIL SENT:", info.response);
 
     return res.status(200).json({
       success: true,
@@ -102,7 +102,7 @@ app.post("/api/contact", async (req, res) => {
     });
 
   } catch (error) {
-    console.log("❌ EMAIL ERROR:", error);
+    console.log("❌ EMAIL FAILED:", error);
 
     return res.status(500).json({
       success: false,
@@ -110,7 +110,6 @@ app.post("/api/contact", async (req, res) => {
     });
   }
 });
-
 /* =========================
    SERVER START
 ========================= */
