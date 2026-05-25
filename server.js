@@ -7,13 +7,9 @@ const nodemailer = require("nodemailer");
 const app = express();
 
 /* =========================
-   CORS (FIXED FOR VERCEL)
+   MIDDLEWARE
 ========================= */
-app.use(cors({
-  origin: "https://my-resume-tau-seven.vercel.app",
-  methods: ["GET", "POST"],
-}));
-
+app.use(cors()); // simple & working
 app.use(express.json());
 
 /* =========================
@@ -27,7 +23,7 @@ app.get("/", (req, res) => {
 });
 
 /* =========================
-   NODEMAILER
+   NODEMAILER SETUP
 ========================= */
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -38,7 +34,7 @@ const transporter = nodemailer.createTransport({
 });
 
 /* =========================
-   TEST MAIL
+   TEST MAIL (CHECK)
 ========================= */
 app.get("/test-mail", async (req, res) => {
   try {
@@ -46,14 +42,22 @@ app.get("/test-mail", async (req, res) => {
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
       subject: "Test Mail",
-      text: "Backend working fine 👍",
+      text: "Backend is working 👍",
     });
 
-    res.json({ success: true, message: "Test mail sent" });
+    return res.json({
+      success: true,
+      message: "Test mail sent",
+    });
 
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ success: false, message: "Mail failed" });
+  } catch (error) {
+    console.log("TEST MAIL ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Test mail failed",
+      error: error.message,
+    });
   }
 });
 
@@ -64,16 +68,16 @@ app.post("/api/contact", async (req, res) => {
   try {
     const { name, email, message } = req.body;
 
-    console.log("REQUEST RECEIVED:", req.body);
+    console.log("REQUEST:", req.body);
 
     if (!name || !email || !message) {
-      return res.json({
+      return res.status(400).json({
         success: false,
-        message: "Missing fields"
+        message: "All fields required",
       });
     }
 
-    let info = await transporter.sendMail({
+    await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
       replyTo: email,
@@ -81,28 +85,27 @@ app.post("/api/contact", async (req, res) => {
       text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
     });
 
-    console.log("EMAIL SENT:", info.response);
-
     return res.json({
       success: true,
-      message: "Message sent successfully"
+      message: "Message sent successfully ✅",
     });
 
   } catch (error) {
     console.log("EMAIL ERROR:", error);
 
-    return res.json({
+    return res.status(500).json({
       success: false,
-      message: error.message
+      message: "Email sending failed ❌",
+      error: error.message,
     });
   }
 });
 
 /* =========================
-   START SERVER
+   SERVER START
 ========================= */
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
