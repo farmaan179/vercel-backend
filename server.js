@@ -47,7 +47,7 @@ transporter.verify((error) => {
 });
 
 /* =========================
-   CONTACT ROUTE (FIXED)
+   CONTACT ROUTE
 ========================= */
 app.post("/api/contact", async (req, res) => {
   try {
