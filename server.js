@@ -59,8 +59,7 @@ app.post("/api/contact", async (req, res) => {
   }
 
   try {
-    // IMPORTANT: mail send but don't block response
-    transporter.sendMail({
+    const info = await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
       replyTo: email,
@@ -68,14 +67,15 @@ app.post("/api/contact", async (req, res) => {
       text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
     });
 
-    // 🔥 FAST RESPONSE (fix "sending stuck")
+    console.log("EMAIL SENT ✅", info.response);
+
     return res.status(200).json({
       success: true,
       message: "Message sent successfully ✅",
     });
 
   } catch (error) {
-    console.log("ERROR ❌", error);
+    console.log("EMAIL ERROR ❌", error);
 
     return res.status(500).json({
       success: false,
