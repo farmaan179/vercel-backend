@@ -29,7 +29,9 @@ app.get("/", (req, res) => {
 ========================= */
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -80,7 +82,7 @@ app.post("/api/contact", async (req, res) => {
       } else {
         console.log("📩 EMAIL SENT SUCCESS:", info.response);
       }
-    }
+    },
   );
 });
 
