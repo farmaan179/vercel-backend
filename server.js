@@ -64,14 +64,16 @@ app.post("/api/contact", async (req, res) => {
   try {
     const { name, email, message } = req.body;
 
+    console.log("REQUEST RECEIVED:", req.body);
+
     if (!name || !email || !message) {
-      return res.status(400).json({
+      return res.json({
         success: false,
-        message: "All fields required",
+        message: "Missing fields"
       });
     }
 
-    await transporter.sendMail({
+    let info = await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
       replyTo: email,
@@ -79,16 +81,19 @@ app.post("/api/contact", async (req, res) => {
       text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
     });
 
-    res.json({
+    console.log("EMAIL SENT:", info.response);
+
+    return res.json({
       success: true,
-      message: "Message sent successfully ✅",
+      message: "Message sent successfully"
     });
 
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({
+  } catch (error) {
+    console.log("EMAIL ERROR:", error);
+
+    return res.json({
       success: false,
-      message: "Email sending failed ❌",
+      message: error.message
     });
   }
 });
