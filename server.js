@@ -4,7 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
 
-const app = express(); // ✅ MUST BE FIRST AFTER IMPORTS
+const app = express();
 
 /* =========================
    MIDDLEWARE
@@ -44,6 +44,13 @@ app.post("/api/contact", async (req, res) => {
   try {
     const { name, email, message } = req.body;
 
+    if (!name || !email || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields required",
+      });
+    }
+
     const info = await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
@@ -54,7 +61,7 @@ app.post("/api/contact", async (req, res) => {
 
     console.log("EMAIL SENT ✅", info.response);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Email Sent ✅",
     });
@@ -62,7 +69,7 @@ app.post("/api/contact", async (req, res) => {
   } catch (error) {
     console.log("ERROR ❌", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Email Failed ❌",
     });
