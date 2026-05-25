@@ -6,6 +6,9 @@ const nodemailer = require("nodemailer");
 
 const app = express();
 
+/* =========================
+   MIDDLEWARE
+========================= */
 app.use(cors());
 app.use(express.json());
 
@@ -28,11 +31,13 @@ const transporter = nodemailer.createTransport({
   secure: true,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    pass: process.env.EMAIL_PASS, // Gmail App Password
   },
 });
 
-/* SMTP CHECK */
+/* =========================
+   SMTP VERIFY
+========================= */
 transporter.verify((err) => {
   if (err) {
     console.log("❌ SMTP ERROR:", err);
@@ -42,23 +47,27 @@ transporter.verify((err) => {
 });
 
 /* =========================
-   TEST MAIL ROUTE (SEPARATE)
+   TEST MAIL ROUTE
 ========================= */
 app.get("/test-mail", async (req, res) => {
   try {
     const info = await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: `"Test" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
       subject: "Test Email",
-      text: "Hello bhai test mail working hai",
+      text: "Hello bhai, SMTP working hai 🚀",
     });
 
-    console.log("TEST EMAIL:", info.response);
+    console.log("📩 TEST EMAIL SENT:", info.response);
 
-    res.json({ success: true });
+    res.json({ success: true, message: "Test mail sent" });
   } catch (err) {
-    console.log("TEST MAIL ERROR:", err);
-    res.json({ success: false });
+    console.log("❌ TEST MAIL ERROR:", err);
+
+    res.status(500).json({
+      success: false,
+      message: "Test mail failed",
+    });
   }
 });
 
@@ -66,36 +75,41 @@ app.get("/test-mail", async (req, res) => {
    CONTACT ROUTE
 ========================= */
 app.post("/api/contact", async (req, res) => {
-  const { name, email, message } = req.body;
+  try {
+    const { name, email, message } = req.body;
 
-  if (!name || !email || !message) {
-    return res.status(400).json({
-      success: false,
-      message: "All fields required",
-    });
-  }
+    // validation
+    if (!name || !email || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
 
-  res.status(200).json({
-    success: true,
-    message: "Message sent successfully ✅",
-  });
-
-  transporter.sendMail(
-    {
+    // send email
+    await transporter.sendMail({
       from: `"Contact Form" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
-      replyTo: email,
       subject: `New Message from ${name}`,
-      text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
-    },
-    (error, info) => {
-      if (error) {
-        console.log("❌ EMAIL ERROR:", error);
-      } else {
-        console.log("📩 EMAIL SENT:", info.response);
-      }
-    }
-  );
+      text: `
+Name: ${name}
+Email: ${email}
+Message: ${message}
+      `,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Message sent successfully ✅",
+    });
+  } catch (error) {
+    console.log("❌ EMAIL ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Email sending failed",
+    });
+  }
 });
 
 /* =========================
@@ -104,5 +118,5 @@ app.post("/api/contact", async (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 SERVER RUNNING ON ${PORT}`);
+  console.log(`🚀 SERVER RUNNING ON PORT ${PORT}`);
 });
